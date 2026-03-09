@@ -17,4 +17,10 @@ declare module '@napi-rs/canvas' {
 
   export function createCanvas(width: number, height: number): Canvas;
   export function createImageData(width: number, height: number): ImageData;
+  
+  export const GlobalFonts: {
+    registerFromPath(path: string, name: string): boolean;
+    has(name: string): boolean;
+    families: string[];
+  };
 }

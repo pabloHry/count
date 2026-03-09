@@ -42,8 +42,7 @@ let fontRegistered = false;
 export async function GET(request: NextRequest) {
   try {
     // Dynamically import @napi-rs/canvas
-    const skiaCanvas = await import('@napi-rs/canvas');
-    const { createCanvas, GlobalFonts } = skiaCanvas;
+    const { createCanvas, GlobalFonts } = await import('@napi-rs/canvas');
 
     // Register font once
     if (!fontRegistered) {
