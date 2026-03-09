@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import GIFEncoder from 'gif-encoder-2';
-import { createCanvas } from 'skia-canvas';
 
 // Configure for Node.js runtime - required for canvas
 export const runtime = 'nodejs';
@@ -37,6 +36,10 @@ function formatNumber(num: number): string {
 
 export async function GET(request: NextRequest) {
   try {
+    // Dynamically import skia-canvas to avoid webpack issues
+    const skiaCanvas = await import(/* webpackIgnore: true */ 'skia-canvas');
+    const { Canvas } = skiaCanvas;
+
     // Get query parameters for customization
     const { searchParams } = new URL(request.url);
     const width = parseInt(searchParams.get('width') || '600');
@@ -47,8 +50,8 @@ export async function GET(request: NextRequest) {
     const title = searchParams.get('title') || 'IDEM 2026';
     const frames = parseInt(searchParams.get('frames') || '60');
 
-    // Create canvas
-    const canvas = createCanvas(width, height);
+    // Create canvas using skia-canvas API
+    const canvas = new Canvas(width, height);
     const ctx = canvas.getContext('2d');
 
     // Create GIF encoder

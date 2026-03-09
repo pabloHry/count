@@ -9,7 +9,8 @@ declare module 'skia-canvas' {
     getImageData(sx: number, sy: number, sw: number, sh: number): ImageData;
   }
 
-  export interface Canvas {
+  export class Canvas {
+    constructor(width: number, height: number);
     getContext(contextId: '2d'): CanvasRenderingContext2D;
     width: number;
     height: number;

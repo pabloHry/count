@@ -1,17 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable image optimization (required for Sharp)
+  // Enable image optimization
   images: {
     unoptimized: true,
-  },
-  
-  // Webpack configuration for native modules
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals = [...(config.externals || []), 'skia-canvas'];
-    }
-    return config;
   },
   
   // Ensure API routes work correctly
