@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import GIFEncoder from 'gif-encoder-2';
+import { join } from 'path';
+import { cwd } from 'process';
 
 // Configure for Node.js runtime - required for canvas
 export const runtime = 'nodejs';
@@ -34,12 +36,29 @@ function formatNumber(num: number): string {
   return num.toString().padStart(2, '0');
 }
 
+// Cache font registration
+let fontRegistered = false;
+
 export async function GET(request: NextRequest) {
   try {
-    // Dynamically import @napi-rs/canvas to avoid webpack bundling issues
-    const { createCanvas } = await import('@napi-rs/canvas');
+    // Dynamically import @napi-rs/canvas
+    const skiaCanvas = await import('@napi-rs/canvas');
+    const { createCanvas, GlobalFonts } = skiaCanvas;
 
-    // Get query parameters for customization
+    // Register font once
+    if (!fontRegistered) {
+      try {
+        const fontPath = join(cwd(), 'public', 'fonts', 'Inter.ttf');
+        GlobalFonts.registerFromPath(fontPath, 'Inter');
+        fontRegistered = true;
+        console.log('Font registered successfully from:', fontPath);
+      } catch (fontError) {
+        console.error('Failed to register font:', fontError);
+        // Continue without custom font - will use default
+      }
+    }
+
+    // Get query parameters
     const { searchParams } = new URL(request.url);
     const width = parseInt(searchParams.get('width') || '600');
     const height = parseInt(searchParams.get('height') || '200');
@@ -56,36 +75,37 @@ export async function GET(request: NextRequest) {
     // Create GIF encoder
     const encoder = new GIFEncoder(width, height, 'neuquant', true);
     encoder.start();
-    encoder.setRepeat(0); // Loop forever
-    encoder.setDelay(1000); // 1 second per frame
-    encoder.setQuality(10); // Quality (1-30, lower is better)
+    encoder.setRepeat(0);
+    encoder.setDelay(1000);
+    encoder.setQuality(10);
 
     // Parse colors
     const bgRgb = hexToRgb(bgColor);
     const textRgb = hexToRgb(textColor);
     const accentRgb = hexToRgb(accentColor);
 
-    // Generate frames (each frame represents one second)
+    // Font family to use
+    const fontFamily = fontRegistered ? 'Inter' : 'sans-serif';
+
+    // Generate frames
     for (let i = 0; i < frames; i++) {
-      // Clear canvas with background color
+      // Clear canvas
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, width, height);
 
-      // Calculate time for this frame
       const timeLeft = getTimeLeft(TARGET_DATE);
 
-      // Check if countdown has ended
       if (timeLeft.total <= 0) {
-        // Draw "Event Started!" message
+        // Draw "Event Started!"
         ctx.fillStyle = accentColor;
-        ctx.font = `bold ${Math.floor(height * 0.25)}px Arial`;
+        ctx.font = `bold ${Math.floor(height * 0.25)}px ${fontFamily}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('Event Started!', width / 2, height / 2);
       } else {
         // Draw title
         ctx.fillStyle = textColor;
-        ctx.font = `bold ${Math.floor(height * 0.18)}px Arial`;
+        ctx.font = `bold ${Math.floor(height * 0.18)}px ${fontFamily}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText(title, width / 2, height * 0.08);
@@ -97,7 +117,6 @@ export async function GET(request: NextRequest) {
         const startX = (width - (boxWidth * 4 + gap * 3)) / 2 + boxWidth / 2;
         const boxY = height * 0.42;
 
-        // Calculate time values for this frame
         const totalSeconds = timeLeft.total / 1000 + i;
         const days = Math.floor(totalSeconds / (24 * 60 * 60));
         const hours = Math.floor((totalSeconds / (60 * 60)) % 24);
@@ -114,26 +133,26 @@ export async function GET(request: NextRequest) {
         timeUnits.forEach((unit, index) => {
           const x = startX + index * (boxWidth + gap);
 
-          // Draw box background with transparency
+          // Box background
           ctx.fillStyle = `rgba(${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}, 0.13)`;
           ctx.fillRect(x - boxWidth / 2, boxY, boxWidth, boxHeight);
 
-          // Draw number
+          // Number
           ctx.fillStyle = textColor;
-          ctx.font = `bold ${Math.floor(boxHeight * 0.5)}px Arial`;
+          ctx.font = `bold ${Math.floor(boxHeight * 0.5)}px ${fontFamily}`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(formatNumber(Math.max(0, unit.value)), x, boxY + boxHeight * 0.4);
 
-          // Draw label
+          // Label
           ctx.fillStyle = `rgba(${textRgb.r}, ${textRgb.g}, ${textRgb.b}, 0.8)`;
-          ctx.font = `bold ${Math.floor(boxHeight * 0.18)}px Arial`;
+          ctx.font = `bold ${Math.floor(boxHeight * 0.18)}px ${fontFamily}`;
           ctx.fillText(unit.label, x, boxY + boxHeight * 0.78);
         });
 
-        // Draw target date
+        // Target date
         ctx.fillStyle = `rgba(${textRgb.r}, ${textRgb.g}, ${textRgb.b}, 0.6)`;
-        ctx.font = `${Math.floor(height * 0.08)}px Arial`;
+        ctx.font = `${Math.floor(height * 0.08)}px ${fontFamily}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText(
@@ -147,19 +166,14 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Get raw pixel data from canvas
+      // Add frame
       const imgData = ctx.getImageData(0, 0, width, height);
-      
-      // Add frame to encoder
       encoder.addFrame(new Uint8Array(imgData.data.buffer));
     }
 
     encoder.finish();
-
-    // Get the GIF buffer
     const buffer = encoder.out.getData();
 
-    // Return the GIF with no-cache headers
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'image/gif',
@@ -178,7 +192,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Helper function to convert hex color to rgb
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const cleanHex = hex.replace('#', '');
   const r = parseInt(cleanHex.slice(0, 2), 16);
