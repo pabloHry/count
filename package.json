@@ -4,14 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy": "vercel --prod"
   },
   "dependencies": {
+    "gif-encoder-2": "^1.0.5",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "sharp": "^0.34.5",
+    "skia-canvas": "^3.0.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
