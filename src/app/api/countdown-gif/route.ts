@@ -148,31 +148,17 @@ export async function GET(request: NextRequest) {
           ctx.font = `bold ${Math.floor(boxHeight * 0.18)}px ${fontFamily}`;
           ctx.fillText(unit.label, x, boxY + boxHeight * 0.78);
 
-          // Draw colon divider after each box except the last one
+          // Draw vertical bar divider after each box except the last one
           if (index < timeUnits.length - 1) {
-            const colonX = x + boxWidth / 2 + gap / 2;
-            ctx.fillStyle = textColor;
-            ctx.font = `bold ${Math.floor(boxHeight * 0.4)}px ${fontFamily}`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(':', colonX, boxY + boxHeight * 0.4);
+            const barX = x + boxWidth / 2 + gap / 2;
+            const barHeight = boxHeight * 0.5;
+            const barY = boxY + (boxHeight - barHeight) / 2;
+            ctx.fillStyle = `rgba(${textRgb.r}, ${textRgb.g}, ${textRgb.b}, 0.3)`;
+            ctx.fillRect(barX - 1, barY, 2, barHeight);
           }
         });
 
-        // Target date
-        ctx.fillStyle = `rgba(${textRgb.r}, ${textRgb.g}, ${textRgb.b}, 0.6)`;
-        ctx.font = `${Math.floor(height * 0.08)}px ${fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(
-          `Target: ${TARGET_DATE.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}`,
-          width / 2,
-          height * 0.95
-        );
+
       }
 
       // Add frame
