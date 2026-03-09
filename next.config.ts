@@ -1,12 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable image optimization
   images: {
     unoptimized: true,
   },
   
-  // Ensure API routes work correctly
+  // Mark native modules as external for server bundles
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [...(config.externals || []), '@napi-rs/canvas'];
+    }
+    return config;
+  },
+  
   async headers() {
     return [
       {
