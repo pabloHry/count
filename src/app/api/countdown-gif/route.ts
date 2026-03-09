@@ -147,6 +147,16 @@ export async function GET(request: NextRequest) {
           ctx.fillStyle = `rgba(${textRgb.r}, ${textRgb.g}, ${textRgb.b}, 0.8)`;
           ctx.font = `bold ${Math.floor(boxHeight * 0.18)}px ${fontFamily}`;
           ctx.fillText(unit.label, x, boxY + boxHeight * 0.78);
+
+          // Draw colon divider after each box except the last one
+          if (index < timeUnits.length - 1) {
+            const colonX = x + boxWidth / 2 + gap / 2;
+            ctx.fillStyle = textColor;
+            ctx.font = `bold ${Math.floor(boxHeight * 0.4)}px ${fontFamily}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(':', colonX, boxY + boxHeight * 0.4);
+          }
         });
 
         // Target date
