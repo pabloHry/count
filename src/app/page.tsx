@@ -37,14 +37,23 @@ export default function Home() {
   const [frames, setFrames] = useState(60);
   const [fps, setFps] = useState(1);
   const [quality, setQuality] = useState(10);
+  
+  // Target date setting
+  const [targetDate, setTargetDate] = useState('2026-04-17');
+  
+  // HTML Editor mode
+  const [htmlEditorMode, setHtmlEditorMode] = useState<'simple' | 'advanced'>('simple');
+  const [customHtml, setCustomHtml] = useState('');
 
   const baseUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/api/countdown-gif`
     : '/api/countdown-gif';
 
-  const gifUrl = `${baseUrl}?width=${width}&height=${height}&bgColor=${encodeURIComponent(bgColor)}&textColor=${encodeURIComponent(textColor)}&accentColor=${encodeURIComponent(accentColor)}&title=${encodeURIComponent(title)}&frames=${frames}&fps=${fps}&quality=${quality}&titleSize=${titleSize}&counterSize=${counterSize}&labelSize=${labelSize}&dividerSize=${dividerSize}&boxWidth=${boxWidth}&boxHeight=${boxHeight}&gap=${gap}&boxY=${boxY}&titleY=${titleY}&boxOpacity=${boxOpacity}&dividerOpacity=${dividerOpacity}&dividerWidth=${dividerWidth}`;
+  const gifUrl = `${baseUrl}?width=${width}&height=${height}&bgColor=${encodeURIComponent(bgColor)}&textColor=${encodeURIComponent(textColor)}&accentColor=${encodeURIComponent(accentColor)}&title=${encodeURIComponent(title)}&frames=${frames}&fps=${fps}&quality=${quality}&titleSize=${titleSize}&counterSize=${counterSize}&labelSize=${labelSize}&dividerSize=${dividerSize}&boxWidth=${boxWidth}&boxHeight=${boxHeight}&gap=${gap}&boxY=${boxY}&titleY=${titleY}&boxOpacity=${boxOpacity}&dividerOpacity=${dividerOpacity}&dividerWidth=${dividerWidth}&targetDate=${encodeURIComponent(targetDate + 'T00:00:00Z')}`;
 
-  const htmlCode = `<img src="${gifUrl}" alt="Countdown to ${title}" style="display: block; max-width: 100%;" />`;
+  const simpleHtmlCode = `<img src="${gifUrl}" alt="Countdown to ${title}" style="display: block; max-width: 100%;" />`;
+  
+  const htmlCode = htmlEditorMode === 'simple' ? simpleHtmlCode : (customHtml || simpleHtmlCode);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(htmlCode);
@@ -74,6 +83,9 @@ export default function Home() {
     setFrames(60);
     setFps(1);
     setQuality(10);
+    setTargetDate('2026-04-17');
+    setHtmlEditorMode('simple');
+    setCustomHtml('');
   };
 
   return (
@@ -122,14 +134,25 @@ export default function Home() {
               {/* Content */}
               <div className="border-b border-white/10 pb-3">
                 <h3 className="text-sm font-medium text-purple-300 mb-2">Content</h3>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-2 py-1.5 bg-white/10 border border-white/20 rounded text-white text-sm"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full px-2 py-1.5 bg-white/10 border border-white/20 rounded text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Target Date</label>
+                    <input
+                      type="date"
+                      value={targetDate}
+                      onChange={(e) => setTargetDate(e.target.value)}
+                      className="w-full px-2 py-1.5 bg-white/10 border border-white/20 rounded text-white text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -415,20 +438,83 @@ export default function Home() {
 
         {/* HTML Code Section */}
         <div className="mt-6 bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-white">HTML Code for Email</h2>
-            <button
-              onClick={copyToClipboard}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              {copied ? '✓ Copied!' : 'Copy HTML'}
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex bg-black/30 rounded-lg p-1">
+                <button
+                  onClick={() => setHtmlEditorMode('simple')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    htmlEditorMode === 'simple'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Simple
+                </button>
+                <button
+                  onClick={() => setHtmlEditorMode('advanced')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    htmlEditorMode === 'advanced'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Advanced
+                </button>
+              </div>
+              <button
+                onClick={copyToClipboard}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                {copied ? '✓ Copied!' : 'Copy HTML'}
+              </button>
+            </div>
           </div>
-          <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
-            <code className="text-green-400 font-mono text-xs whitespace-pre-wrap break-all">
-              {htmlCode}
-            </code>
-          </div>
+          
+          {htmlEditorMode === 'simple' ? (
+            <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
+              <code className="text-green-400 font-mono text-xs whitespace-pre-wrap break-all">
+                {htmlCode}
+              </code>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-400">
+                  Paste your existing HTML or edit below. Use <code className="text-purple-400">{'{{GIF_URL}}'}</code> as placeholder for the GIF URL.
+                </p>
+                <button
+                  onClick={() => setCustomHtml(simpleHtmlCode)}
+                  className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                >
+                  Reset to Simple
+                </button>
+              </div>
+              <textarea
+                value={customHtml}
+                onChange={(e) => setCustomHtml(e.target.value)}
+                placeholder={`<table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center">
+      <img src="{{GIF_URL}}" alt="Countdown" style="display: block; max-width: 100%;" />
+    </td>
+  </tr>
+</table>`}
+                className="w-full h-48 px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl text-green-400 font-mono text-xs resize-y focus:outline-none focus:border-purple-500"
+              />
+              <div className="bg-black/30 rounded-lg p-3">
+                <p className="text-xs text-gray-400 mb-2">Preview:</p>
+                <div 
+                  className="bg-white rounded p-4 overflow-auto"
+                  style={{ maxHeight: '200px' }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: htmlCode.replace(/\{\{GIF_URL\}\}/g, gifUrl)
+                  }} 
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* API Documentation */}
@@ -457,6 +543,7 @@ export default function Home() {
               ['frames', '60', 'Number of frames (seconds)'],
               ['fps', '1', 'Frames per second'],
               ['quality', '10', 'GIF quality (1-30, lower is better)'],
+              ['targetDate', '2026-04-17T00:00:00Z', 'Target date (ISO 8601 format)'],
             ].map(([param, def, desc]) => (
               <div key={param} className="bg-black/30 rounded p-2">
                 <code className="text-green-400 font-bold">{param}</code>

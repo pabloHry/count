@@ -7,8 +7,8 @@ import { cwd } from 'process';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Target date: April 17, 2026
-const TARGET_DATE = new Date('2026-04-17T00:00:00Z');
+// Default target date: April 17, 2026
+const DEFAULT_TARGET_DATE = '2026-04-17T00:00:00Z';
 
 interface TimeLeft {
   days: number;
@@ -91,6 +91,21 @@ export async function GET(request: NextRequest) {
     // Animation parameters
     const fps = parseInt(searchParams.get('fps') || '1');
     const quality = parseInt(searchParams.get('quality') || '10');
+    
+    // Target date parameter
+    const targetDateParam = searchParams.get('targetDate');
+    let targetDate: Date;
+    
+    if (targetDateParam) {
+      // Parse ISO date string (e.g., "2026-04-17T00:00:00Z" or "2026-04-17")
+      targetDate = new Date(targetDateParam);
+      if (isNaN(targetDate.getTime())) {
+        // Invalid date, fall back to default
+        targetDate = new Date(DEFAULT_TARGET_DATE);
+      }
+    } else {
+      targetDate = new Date(DEFAULT_TARGET_DATE);
+    }
 
     // Create canvas
     const canvas = createCanvas(width, height);
@@ -123,7 +138,7 @@ export async function GET(request: NextRequest) {
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, width, height);
 
-      const timeLeft = getTimeLeft(TARGET_DATE);
+      const timeLeft = getTimeLeft(targetDate);
 
       if (timeLeft.total <= 0) {
         // Draw "Event Started!"
