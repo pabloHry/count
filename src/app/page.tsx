@@ -2,6 +2,32 @@
 
 import { useState } from 'react';
 
+// Parameter mapping for import functionality
+interface Params {
+  width: number;
+  height: number;
+  bgColor: string;
+  textColor: string;
+  accentColor: string;
+  title: string;
+  titleSize: number;
+  counterSize: number;
+  labelSize: number;
+  dividerSize: number;
+  boxWidth: number;
+  boxHeight: number;
+  gap: number;
+  boxY: number;
+  titleY: number;
+  boxOpacity: number;
+  dividerOpacity: number;
+  dividerWidth: number;
+  frames: number;
+  fps: number;
+  quality: number;
+  targetDate: string;
+}
+
 export default function Home() {
   const [copied, setCopied] = useState(false);
   
@@ -44,6 +70,134 @@ export default function Home() {
   // HTML Editor mode
   const [htmlEditorMode, setHtmlEditorMode] = useState<'simple' | 'advanced'>('simple');
   const [customHtml, setCustomHtml] = useState('');
+  
+  // Import from HTML
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importError, setImportError] = useState('');
+
+  const parseParamsFromUrl = (url: string): Partial<Params> | null => {
+    try {
+      const urlObj = new URL(url);
+      const params = urlObj.searchParams;
+      
+      const getString = (key: string): string | undefined => {
+        const val = params.get(key);
+        return val !== null ? decodeURIComponent(val) : undefined;
+      };
+      
+      const getNumber = (key: string): number | undefined => {
+        const val = params.get(key);
+        return val !== null ? parseFloat(val) : undefined;
+      };
+      
+      // Parse target date - handle both full ISO string and date-only
+      let targetDateStr: string | undefined;
+      const targetDateParam = getString('targetDate');
+      if (targetDateParam) {
+        // Extract just the date part (YYYY-MM-DD)
+        const match = targetDateParam.match(/^(\d{4}-\d{2}-\d{2})/);
+        targetDateStr = match ? match[1] : targetDateParam;
+      }
+      
+      return {
+        width: getNumber('width'),
+        height: getNumber('height'),
+        bgColor: getString('bgColor'),
+        textColor: getString('textColor'),
+        accentColor: getString('accentColor'),
+        title: getString('title'),
+        titleSize: getNumber('titleSize'),
+        counterSize: getNumber('counterSize'),
+        labelSize: getNumber('labelSize'),
+        dividerSize: getNumber('dividerSize'),
+        boxWidth: getNumber('boxWidth'),
+        boxHeight: getNumber('boxHeight'),
+        gap: getNumber('gap'),
+        boxY: getNumber('boxY'),
+        titleY: getNumber('titleY'),
+        boxOpacity: getNumber('boxOpacity'),
+        dividerOpacity: getNumber('dividerOpacity'),
+        dividerWidth: getNumber('dividerWidth'),
+        frames: getNumber('frames'),
+        fps: getNumber('fps'),
+        quality: getNumber('quality'),
+        targetDate: targetDateStr,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const extractUrlFromHtml = (html: string): string | null => {
+    // Try to find src attribute in img tag
+    const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (imgMatch) {
+      return imgMatch[1];
+    }
+    // Try to find any URL that looks like our API endpoint
+    const urlMatch = html.match(/(https?:\/\/[^\s"'<>]+)/i);
+    if (urlMatch) {
+      return urlMatch[1];
+    }
+    return null;
+  };
+
+  const handleImport = () => {
+    setImportError('');
+    
+    if (!importText.trim()) {
+      setImportError('Please paste your HTML or URL');
+      return;
+    }
+    
+    // Try to extract URL from HTML
+    let url = extractUrlFromHtml(importText);
+    
+    // If no URL found in HTML, try the whole text as a URL
+    if (!url && importText.trim().startsWith('http')) {
+      url = importText.trim();
+    }
+    
+    if (!url) {
+      setImportError('Could not find a valid URL. Please paste the full HTML img tag or the GIF URL.');
+      return;
+    }
+    
+    const params = parseParamsFromUrl(url);
+    
+    if (!params) {
+      setImportError('Could not parse the URL. Please check the format.');
+      return;
+    }
+    
+    // Update state with imported values
+    if (params.width !== undefined) setWidth(params.width);
+    if (params.height !== undefined) setHeight(params.height);
+    if (params.bgColor !== undefined) setBgColor(params.bgColor);
+    if (params.textColor !== undefined) setTextColor(params.textColor);
+    if (params.accentColor !== undefined) setAccentColor(params.accentColor);
+    if (params.title !== undefined) setTitle(params.title);
+    if (params.titleSize !== undefined) setTitleSize(params.titleSize);
+    if (params.counterSize !== undefined) setCounterSize(params.counterSize);
+    if (params.labelSize !== undefined) setLabelSize(params.labelSize);
+    if (params.dividerSize !== undefined) setDividerSize(params.dividerSize);
+    if (params.boxWidth !== undefined) setBoxWidth(params.boxWidth);
+    if (params.boxHeight !== undefined) setBoxHeight(params.boxHeight);
+    if (params.gap !== undefined) setGap(params.gap);
+    if (params.boxY !== undefined) setBoxY(params.boxY);
+    if (params.titleY !== undefined) setTitleY(params.titleY);
+    if (params.boxOpacity !== undefined) setBoxOpacity(params.boxOpacity);
+    if (params.dividerOpacity !== undefined) setDividerOpacity(params.dividerOpacity);
+    if (params.dividerWidth !== undefined) setDividerWidth(params.dividerWidth);
+    if (params.frames !== undefined) setFrames(params.frames);
+    if (params.fps !== undefined) setFps(params.fps);
+    if (params.quality !== undefined) setQuality(params.quality);
+    if (params.targetDate !== undefined) setTargetDate(params.targetDate);
+    
+    setImportModalOpen(false);
+    setImportText('');
+  };
 
   const baseUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/api/countdown-gif`
@@ -122,12 +276,20 @@ export default function Home() {
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-5 border border-white/20 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-white">Customize</h2>
-              <button
-                onClick={resetToDefaults}
-                className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
-              >
-                Reset
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setImportModalOpen(true)}
+                  className="text-xs px-3 py-1 bg-purple-700 hover:bg-purple-600 text-white rounded transition-colors"
+                >
+                  Import from HTML
+                </button>
+                <button
+                  onClick={resetToDefaults}
+                  className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
             
             <div className="space-y-4">
@@ -553,6 +715,47 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* Import Modal */}
+        {importModalOpen && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-900 rounded-2xl p-6 max-w-lg w-full border border-white/20">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                Import from HTML
+              </h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Paste your existing HTML img tag or the GIF URL below. All settings will be automatically extracted.
+              </p>
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder={`<img src="https://count-51tb.vercel.app/api/countdown-gif?width=600..." alt="..." />`}
+                className="w-full h-32 px-4 py-3 bg-black/50 border border-gray-700 rounded-xl text-green-400 font-mono text-xs resize-y focus:outline-none focus:border-purple-500 mb-4"
+              />
+              {importError && (
+                <p className="text-red-400 text-sm mb-4">{importError}</p>
+              )}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setImportModalOpen(false);
+                    setImportText('');
+                    setImportError('');
+                  }}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleImport}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Import
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
